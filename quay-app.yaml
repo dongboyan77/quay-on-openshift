@@ -1,0 +1,86 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    quay-enterprise-component: app
+  name: quay-enterprise-app
+spec:
+  replicas: 1
+  selector:
+    quay-enterprise-component: app
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        quay-enterprise-component: app
+    spec:
+      containers:
+      - env: {}
+        image: ' '
+        imagePullPolicy: IfNotPresent
+#        livenessProbe:
+#          failureThreshold: 3
+#          httpGet:
+#            path: /health/endtoend
+#            port: 80
+#            scheme: HTTPS
+#          initialDelaySeconds: 10
+#          periodSeconds: 10
+#          successThreshold: 1
+#          timeoutSeconds: 5
+        name: quay-enterprise-app
+        ports:
+        - containerPort: 80
+          protocol: TCP
+#        readinessProbe:
+#          failureThreshold: 3
+#          httpGet:
+#            path: /health/endtoend
+#            port: 80
+#            scheme: HTTPS
+#          periodSeconds: 10
+#          successThreshold: 1
+#          timeoutSeconds: 5
+        resources: {}
+        securityContext:
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /datastorage
+          name: registry-storage
+        - name: configvolume
+          readOnly: false
+          mountPath: /conf/stack
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: registry-storage
+      - name: configvolume
+        secret:
+          secretName: quay-enterprise-config-secret
+  test: false
+  triggers:
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - quay-enterprise-app
+      from:
+        kind: ImageStreamTag
+        name: quay:latest
+    type: ImageChange
+  - type: ConfigChange

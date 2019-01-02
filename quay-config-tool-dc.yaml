@@ -1,0 +1,63 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    quay-enterprise-component: config-tool
+  name: quay-config-tool
+spec:
+  replicas: 1
+  selector:
+    quay-enterprise-component: config-tool
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        quay-enterprise-component: config-tool
+    spec:
+      containers:
+      - env: {}
+        image: ' '
+        imagePullPolicy: IfNotPresent
+        name: quay-config-tool
+        command:
+          - /quay-registry/quay-entrypoint.sh
+        args:
+          - config
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        - containerPort: 443
+          protocol: TCP
+        resources: {}
+        securityContext:
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+  test: false
+  triggers:
+  - imageChangeParams:
+      automatic: false
+      containerNames:
+      - quay-config-tool
+      from:
+        kind: ImageStreamTag
+        name: quay:latest
+    type: ImageChange
+  - type: ConfigChange

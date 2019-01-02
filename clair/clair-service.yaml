@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: quay-enterprise
+  name: clair
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 6060
+      targetPort: 6060
+    - name: health
+      protocol: TCP
+      port: 6061
+      targetPort: 6061
+  selector:
+    quay-enterprise-component: clair

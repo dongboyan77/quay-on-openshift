@@ -1,0 +1,100 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    quay-enterprise-component: clair
+  name: clair
+  namespace: quay-enterprise
+spec:
+  replicas: 1
+  selector:
+    quay-enterprise-component: clair
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        quay-enterprise-component: clair
+    spec:
+      containers:
+      - env: {}
+        image: ' '
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 6061
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: clair
+        ports:
+        - containerPort: 6060
+          protocol: TCP
+        - containerPort: 6061
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 6061
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources: {}
+        securityContext:
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - name: clairconfig
+          readOnly: false
+          mountPath: /config
+        - name: claircert
+          readOnly: false
+          mountPath: /certs
+        - name: clairkey
+          readOnly: false
+          mountPath: /config/key
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: clairconfig
+        secret:
+          defaultMode: 420
+          secretName: clair-config-secret
+      - name: claircert
+        secret:
+          defaultMode: 420
+          secretName: clair-cert-secret
+      - name: clairkey
+        secret:
+          defaultMode: 420
+          secretName: clair-security-scanner
+  test: false
+  triggers:
+  - imageChangeParams:
+      automatic: false
+      containerNames:
+      - clair
+      from:
+        kind: ImageStreamTag
+        name: clair:latest
+    type: ImageChange
+  - type: ConfigChange

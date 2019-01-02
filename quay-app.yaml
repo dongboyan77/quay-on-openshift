@@ -4,6 +4,7 @@ metadata:
   labels:
     quay-enterprise-component: app
   name: quay-enterprise-app
+  namespace: quay-enterprise
 spec:
   replicas: 1
   selector:
@@ -42,6 +43,8 @@ spec:
         ports:
         - containerPort: 80
           protocol: TCP
+        - containerPort: 443
+          protocol: TCP
 #        readinessProbe:
 #          failureThreshold: 3
 #          httpGet:
@@ -71,12 +74,17 @@ spec:
       - emptyDir: {}
         name: registry-storage
       - name: configvolume
-        secret:
-          secretName: quay-enterprise-config-secret
+        projected:
+          defaultMode: 511
+          sources:
+          - secret:
+              name: quay-enterprise-config-secret
+          - secret:
+              name: quay-enterprise-cert-secret
   test: false
   triggers:
   - imageChangeParams:
-      automatic: true
+      automatic: false
       containerNames:
       - quay-enterprise-app
       from:

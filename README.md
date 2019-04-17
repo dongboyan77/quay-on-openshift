@@ -7,23 +7,30 @@ Recommand rpm database cluster for production, we can use container for testing.
     $ oc new-project quay-db
     $ oc new-app mysql-persistent -p DATABASE_SERVICE_NAME=quay-db -p MYSQL_USER=quayuser -p MYSQL_PASSWORD=quaypass -p MYSQL_DATABASE=quaydb -p MEMORY_LIMIT=2Gi -n quay-db
 
-or
+OR
 
     $ oc new-app postgresql-persistent -p DATABASE_SERVICE_NAME=quay-db -p POSTGRESQL_USER=quayuser -p POSTGRESQL_PASSWORD=quaypass -p POSTGRESQL_DATABASE=quaydb -p MEMORY_LIMIT=2Gi -n quay-db
 
-Additional steps for 2.x
+Add "pg_trgm" extension as superuser on this database.
 
-    $  oc rsh postgresql-1-x2s4m
-    sh-4.2$ /bin/bash -c 'echo "SELECT * FROM pg_available_extensions" | /opt/rh/rh-postgresql<-version:96>/root/usr/bin/psql'
-    sh-4.2$ /bin/bash -c 'echo "CREATE EXTENSION pg_trgm" | /opt/rh/rh-postgresql<-version:96>/root/usr/bin/psql'
-    sh-4.2$ /bin/bash -c 'echo "SELECT * FROM pg_extension" | /opt/rh/rh-postgresql<-version:96>/root/usr/bin/psql'
+    $  oc rsh <postgresql-pod>
     sh-4.2$ /bin/bash -c 'echo "ALTER USER quayuser WITH SUPERUSER;" | /opt/rh/rh-postgresql<-version:96>/root/usr/bin/psql'
+    sh-4.2$ psql -U quayuser -W quaydb
+    quaydb=# CREATE EXTENSION IF NOT EXISTS pg_trgm;
+    CREATE EXTENSION
+    quaydb=# \dx
+                                        List of installed extensions
+      Name   | Version |   Schema   |                            Description                            
+    ---------+---------+------------+-------------------------------------------------------------------
+     pg_trgm | 1.3     | public     | text similarity measurement and index searching based on trigrams
+     plpgsql | 1.0     | pg_catalog | PL/pgSQL procedural language
+    (2 rows)
 
 ## Setup Quay
 
 ### 1. Create project on openshift cluster
 
-    $ oc new-project quay-enterprise  \\ hard code
+    $ oc new-project quay-enterprise  \\ project name is hard code
 
 ### 2. Create a user group to manage above project
 
@@ -99,22 +106,25 @@ Could skip this step if ssl certificate by external load balancer or edge route
 
     $ oc create secret generic quay-enterprise-cert-secret --from-file=ssl.cert --from-file=ssl.key -n quay-enterprise
 
-### 8. Deploy quay deployment
-
-    $ oc create -f quay-config-secret.yaml          \\ the secret name is hard code
-
-    $ oc create -f quay-app.yaml
-
-Against 2.x, modify containerPort 8080 to 80, 8443 to 443
-
-### 9. Use quay config tool to initialize database and quay configurations
+### 8. Use quay config tool to initialize database and quay configurations
 
 Skip this step against 2.x
 
     $ oc create -f quay-config-tool-svc-clusterip.yaml
     $ oc create -f quay-config-tool-dc.yaml
-    $ oc create route passthrough --service=quay-config-tool --port=https -n quay-enterprise
+    $ oc rollout latest quay-config-tool
+    $ oc create route passthrough --service=quay-config-tool --port=web -n quay-enterprise
 
+Download quay-config.tar.gz
+
+### 9. Deploy quay deployment
+
+    $ oc create secret generic quay-enterprise-config-secret --from-file=config.yaml -n quay-enterprise          \\ the secret name is hard code
+    $ oc create -f quay-app.yaml
+
+Against 2.x, modify containerPort 8080 to 80, 8443 to 443
+    
+    $ oc rollout latest quay-enterprise-app
 
 ## Set up clair
 

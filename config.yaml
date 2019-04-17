@@ -59,4 +59,3 @@ USERFILES_LOCATION: default
 USERFILES_PATH: userfiles/
 USER_EVENTS_REDIS: {host: 172.30.176.184, password: quayredis, port: 6379}
 USE_CDN: false
-V22_NAMESPACE_WHITELIST: [dongboyan77, v22test]

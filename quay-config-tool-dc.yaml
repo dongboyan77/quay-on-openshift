@@ -34,9 +34,9 @@ spec:
         args:
           - config
         ports:
-        - containerPort: 80
+        - containerPort: 8080
           protocol: TCP
-        - containerPort: 443
+        - containerPort: 8443
           protocol: TCP
         resources: {}
         securityContext:
